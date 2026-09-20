@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+publish/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+launchSettings.json
+
+# NuGet
+*.nupkg
+packages/
+
+# Local verification artefacts produced by tools/capture.ps1
+/*.png
+!docs/images/*.png
+
+# Scratch
+*.log
+*.tmp
