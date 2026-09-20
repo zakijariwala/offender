@@ -33,6 +33,26 @@ if ($Release) {
     Write-Host 'Publishing NativeAOT build...' -ForegroundColor Cyan
     Write-Host 'This needs the Visual Studio C++ build tools for the native linker.' -ForegroundColor DarkGray
 
+    # The ILCompiler targets shell out to a bare `vswhere.exe` to locate the MSVC linker
+    # and its library paths. vswhere ships in the VS *Installer* directory, which is not
+    # on PATH by default and is not added by VsDevCmd either -- so without this the link
+    # step fails with a confusing error in which vswhere's own "not recognized" message
+    # has been concatenated into the linker path.
+    $installerDir = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer'
+    if ((Test-Path (Join-Path $installerDir 'vswhere.exe')) -and
+        -not (Get-Command vswhere.exe -ErrorAction SilentlyContinue)) {
+        Write-Host "Adding vswhere to PATH: $installerDir" -ForegroundColor DarkGray
+        $env:PATH = "$installerDir;$env:PATH"
+    }
+
+    if (-not (Get-Command vswhere.exe -ErrorAction SilentlyContinue)) {
+        throw @'
+vswhere.exe not found, so the native linker cannot be located.
+Install the C++ build tools:
+  winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+'@
+    }
+
     dotnet publish $project -c Release -r win-x64 -p:PublishAot=true -p:SelfContained=true
     if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 

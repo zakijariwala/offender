@@ -21,8 +21,8 @@ What is left is C# talking straight to Win32, compiled with NativeAOT. Concretel
 means no .NET runtime dependency in the shipping build, no UI framework, no JSON
 serializer (settings are hand-rolled `key=value`), and no `System.Diagnostics.Process`.
 
-A measured breakdown of where the working set actually goes, bucketed by module with
-`QueryWorkingSet`:
+A measured breakdown of where the working set went on the *framework-dependent* build,
+bucketed by module with `QueryWorkingSet`:
 
 | Bucket | Resident |
 |---|---|
@@ -32,7 +32,25 @@ A measured breakdown of where the working set actually goes, bucketed by module 
 | OS core (`ntdll`, `KERNELBASE`, `gdi32full`, `RPCRT4`) | ~3 MB |
 
 The DIB surfaces — the thing one would assume dominates a drawing app — are **57 KB** in
-notch state. The runtime is the cost, which is why NativeAOT is the lever that matters.
+notch state. The runtime was the cost, which is exactly why NativeAOT was the lever that
+mattered, and the published build bears that out:
+
+| | Framework-dependent | NativeAOT |
+|---|---|---|
+| Idle working set | 15.0 MB | **7.1 MB** |
+| Loaded modules | 55 | 35 |
+| Executable | needs the .NET runtime | **2.05 MB**, self-contained |
+
+Twenty modules and half the working set disappear because `coreclr`, `clrjit` and
+`System.Private.CoreLib` are no longer there to load.
+
+### Building the native binary
+
+The ILCompiler targets shell out to a bare `vswhere.exe` to locate the MSVC linker.
+vswhere ships in the Visual Studio *Installer* directory, which is not on `PATH` by
+default — and `VsDevCmd.bat` does not add it either. Without it the link step fails with
+vswhere's own "not recognized" message concatenated into the linker path, which is a
+thoroughly misleading error. `build.ps1 -Release` prepends the directory itself.
 
 ---
 
@@ -287,8 +305,6 @@ percentage point.
 
 ## Things that would be worth doing next
 
-- **Produce the NativeAOT build and measure it.** Every published figure is from the
-  framework-dependent build. This is the single biggest open question.
 - **Generated Win32 bindings.** 96 hand-written P/Invoke signatures and several
   hand-transcribed struct layouts are the highest-risk surface in the codebase, and the
   reason for the `GetIfTable` compromise above.

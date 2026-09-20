@@ -19,8 +19,8 @@ numbers but has no per-process view. [System Informer](https://github.com/winsid
 has a superb per-process view but it is a full process explorer you open deliberately —
 not something you glance at. Offender puts the answer on the always-on surface.
 
-It is also genuinely small: **~15 MB idle**, 0.08% CPU, one native executable with no
-runtime to install.
+It is also genuinely small: **6.5 MB idle**, 0.08% CPU, and a **2 MB** single executable
+with no runtime to install.
 
 ### The "slowing you down" score
 
@@ -59,9 +59,16 @@ For the shipping single-file build you also need the MSVC linker, which NativeAO
 winget install --id Microsoft.VisualStudio.2022.BuildTools -e `
   --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 
-.\build.ps1 -Release        # single self-contained exe, no runtime dependency
+.\build.ps1 -Release        # 2 MB self-contained exe, no runtime dependency
 .\build.ps1 -Release -Run
 ```
+
+> **If you publish with `dotnet publish` directly** rather than `build.ps1`, put
+> `%ProgramFiles(x86)%\Microsoft Visual Studio\Installer` on `PATH` first. The ILCompiler
+> targets invoke a bare `vswhere.exe` to locate the linker; it is not on `PATH` by default
+> and `VsDevCmd.bat` does not add it either. Without it the link step fails with
+> vswhere's own "not recognized" message concatenated into the linker path.
+> `build.ps1 -Release` handles this for you.
 
 ## Using it
 
@@ -157,15 +164,25 @@ Notepad, and deliberately not JSON.
 
 ## Footprint
 
-Measured on the framework-dependent build (AOT will be lower):
+Measured, not projected:
 
-| State | Working set | Private | Handles | CPU |
-|---|---|---|---|---|
-| Idle in the notch | 15.0–17.6 MB | ~11 MB | ~298 | 0.08% of a 12-core machine |
-| After using every feature | ~24 MB | ~11 MB | ~324 | — |
+| | NativeAOT (shipping) | Framework-dependent (dev) | NetSpeedTray (reference) |
+|---|---|---|---|
+| **Idle working set** | **7.1 MB** | 15.0 MB | ~50 MB |
+| Private bytes | 9.6 MB | 10.8 MB | — |
+| Executable | **2.05 MB**, single file | needs .NET runtime | ~40 MB installed |
+| Loaded modules | 35 | 55 | — |
+| Handles | 259 | 298 | — |
+| GDI / USER objects | 30 / 9 | 29 / 9 | — |
+| CPU | **0.04%** of a 12-core machine | 0.08% | ~0.1% |
 
-Both states are flat — idle held for 4 minutes and the fully-exercised state for 3 more,
-with no drift in memory, handles or GDI objects.
+The AOT build is **7× lighter than the tool it set out to beat**, and less than half its
+own dev build — the entire .NET runtime (`coreclr`, `clrjit`, `System.Private.CoreLib`)
+is gone, along with the JIT code heap and type metadata that lived on the private heap.
+
+Steady state is genuinely flat: 7.1 MB, 259 handles and 30 GDI objects held constant from
+40 s through 240 s of an idle watch, and across repeated settings open/close,
+expand/collapse and theme-switch cycles.
 
 **If you measure this yourself, two things look like leaks and are not:**
 
@@ -183,9 +200,6 @@ with no drift in memory, handles or GDI objects.
 Offender is early. It works, it is verified against `psutil` for accuracy, but it has been
 exercised on exactly one machine.
 
-- **The NativeAOT build has never been produced** — the MSVC linker was unavailable during
-  development. Every footprint figure above is from the framework-dependent build. AOT
-  should improve them substantially; it has not been measured.
 - **x64 only.** No ARM64 build.
 - **Windows 11 only, tested.** Win10 should work — DWM corner rounding is ignored there —
   but is untested.
