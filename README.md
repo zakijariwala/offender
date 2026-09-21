@@ -208,6 +208,10 @@ expand/collapse and theme-switch cycles.
 Offender is early. It works, it is verified against `psutil` for accuracy, but it has been
 exercised on exactly one machine.
 
+**[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) is the full list** — confirmed defects,
+code paths that have never been exercised, and deliberate limitations, kept separate so
+you can tell which is which. The headlines:
+
 - **x64 only.** No ARM64 build.
 - **Windows 11 only, tested.** Win10 should work — DWM corner rounding is ignored there —
   but is untested.
@@ -219,7 +223,8 @@ exercised on exactly one machine.
   [ARCHITECTURE.md](docs/ARCHITECTURE.md#taskbar-readout).
 - **An unexplained memory step** was observed twice after hours of heavy machine activity
   (~+100 kernel handles, +11 MB). It has not been reproduced deliberately or diagnosed.
-  PDH state is now bounded as a mitigation, but that is a guess, not a fix.
+  PDH state is now bounded as a mitigation, but that is a guess, not a fix —
+  [issue #1](docs/KNOWN_ISSUES.md#1-unexplained-memory-and-handle-step--medium).
 
 ## Contributing
 
