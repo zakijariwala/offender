@@ -41,8 +41,16 @@ does not reshuffle every tick.
 
 No installer yet. Build it (below) or grab a release binary when one exists.
 
-> **SmartScreen:** the executable is unsigned, so Windows will warn on first run. This is
-> expected for an unsigned binary from a new publisher.
+> **SmartScreen will warn on first run.** The executable is not code-signed yet, and
+> Windows warns about any binary from a publisher it does not recognise. Verify your
+> download against the published `SHA256SUMS.txt`:
+>
+> ```powershell
+> Get-FileHash Offender.exe -Algorithm SHA256
+> ```
+>
+> Code signing via the SignPath Foundation is planned — see
+> [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Build
 

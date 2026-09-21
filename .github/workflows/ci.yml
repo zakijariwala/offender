@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and publish (NativeAOT)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build (framework-dependent)
+        run: dotnet build src/Offender/Offender.csproj -c Debug --nologo
+
+      # The GitHub Windows runners ship the MSVC toolchain NativeAOT needs. build.ps1
+      # also puts vswhere on PATH, which the ILCompiler targets require to locate the
+      # linker and which is not on PATH by default.
+      - name: Publish NativeAOT
+        run: .\build.ps1 -Release
+
+      - name: Verify the binary is native and self-contained
+        shell: pwsh
+        run: |
+          $exe = 'src/Offender/bin/Release/net8.0-windows/win-x64/publish/Offender.exe'
+          if (-not (Test-Path $exe)) { throw "publish produced no executable at $exe" }
+
+          $size = (Get-Item $exe).Length / 1MB
+          Write-Host ("Executable: {0:N2} MB" -f $size)
+
+          # A NativeAOT binary hosts no CLR. If these strings appear, PublishAot silently
+          # did not take effect and we would be shipping a framework-dependent build.
+          $txt = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($exe))
+          if ($txt -match 'coreclr\.dll' -or $txt -match 'mscoree\.dll') {
+            throw 'Executable references the CLR - this is not a NativeAOT build.'
+          }
+
+          # The whole point of the project is that it stays small; catch regressions here.
+          if ($size -gt 8) { throw ("Executable grew to {0:N2} MB (budget 8 MB)" -f $size) }
+
+          Write-Host 'OK: native, self-contained, within size budget.'
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Offender-win-x64
+          path: src/Offender/bin/Release/net8.0-windows/win-x64/publish/Offender.exe
+          if-no-files-found: error

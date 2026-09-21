@@ -1,0 +1,103 @@
+name: Release
+
+# Cutting a release is what makes the project eligible for SignPath Foundation code
+# signing: their conditions require software to "already be released in the form to be
+# signed", and that binary artifacts "must be built from source code in a verifiable
+# way". A tagged, CI-produced build with published checksums satisfies both.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v0.1.0)'
+        required: true
+
+permissions:
+  contents: write        # needed to create the GitHub Release
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish NativeAOT
+        run: .\build.ps1 -Release
+
+      - name: Stage artifacts and checksums
+        shell: pwsh
+        run: |
+          $pub = 'src/Offender/bin/Release/net8.0-windows/win-x64/publish'
+          $exe = Join-Path $pub 'Offender.exe'
+          if (-not (Test-Path $exe)) { throw "publish produced no executable at $exe" }
+
+          $txt = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($exe))
+          if ($txt -match 'coreclr\.dll' -or $txt -match 'mscoree\.dll') {
+            throw 'Executable references the CLR - this is not a NativeAOT build.'
+          }
+
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item $exe dist/Offender.exe
+
+          # Published so anyone can verify the download matches what CI built.
+          $hash = (Get-FileHash dist/Offender.exe -Algorithm SHA256).Hash
+          "$hash  Offender.exe" | Set-Content dist/SHA256SUMS.txt -Encoding ascii
+
+          Write-Host ("Offender.exe  {0:N2} MB  SHA256 {1}" -f ((Get-Item dist/Offender.exe).Length/1MB), $hash)
+
+      # ------------------------------------------------------------------
+      # Code signing (inactive until the SignPath Foundation application is
+      # approved).
+      #
+      # Approval provides three values, which go in as repository secrets /
+      # variables: the organization id, the project slug and the signing policy
+      # slug. The official action is:
+      #
+      #     signpath/github-action-submit-signing-request
+      #
+      # Its exact inputs are documented at
+      # https://docs.signpath.io/trusted-build-systems/github -- fill them in from
+      # the approval email rather than guessing, then drop the `if: false` guard.
+      #
+      # Signing consumes the uploaded artifact and returns a signed binary, so this
+      # step belongs between staging and release creation.
+      # ------------------------------------------------------------------
+      - name: Submit signing request (SignPath)
+        if: false        # enable once the SignPath application is approved
+        run: echo "Configure per https://docs.signpath.io/trusted-build-systems/github"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Offender-release
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/Offender.exe
+            dist/SHA256SUMS.txt
+          generate_release_notes: true
+          draft: true        # review before publishing
+          body: |
+            ## Offender ${{ github.ref_name }}
+
+            Single self-contained executable. No .NET runtime required. Windows x64.
+
+            **This binary is not code-signed yet**, so SmartScreen will warn on first
+            run. Verify your download against `SHA256SUMS.txt`:
+
+            ```powershell
+            Get-FileHash Offender.exe -Algorithm SHA256
+            ```
