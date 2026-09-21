@@ -36,7 +36,7 @@ condition is explicit, and new projects with no release history are not eligible
 
 1. **Push the repository to GitHub, public.**
    ```powershell
-   git remote add origin https://github.com/<you>/offender.git
+   git remote add origin https://github.com/zakijariwala/offender.git
    git push -u origin main
    ```
 
@@ -71,7 +71,7 @@ Have these ready:
 | Field | Value |
 |---|---|
 | Project name | Offender |
-| Repository | `https://github.com/<you>/offender` |
+| Repository | `https://github.com/zakijariwala/offender` |
 | License | MIT ([LICENSE](../LICENSE)) |
 | Description | An ambient Windows desktop monitor that ranks the processes actually slowing the machine down. Idles as a corner notch; expands to a full panel showing CPU, memory, network, disk and GPU. |
 | Language / stack | C# compiled with NativeAOT, talking directly to Win32. No UI framework. |

@@ -6,7 +6,7 @@ Thanks for looking. Offender is small and early, so almost everything is open.
 
 ```powershell
 winget install --id Microsoft.DotNet.SDK.10 -e
-git clone https://github.com/<you>/offender
+git clone https://github.com/zakijariwala/offender
 cd offender
 .\build.ps1
 ```
