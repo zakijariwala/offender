@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+
+PackageIdentifier: ZakiJariwala.Offender
+PackageVersion: 0.1.1
+
+# Offender is a single self-contained executable with no dependencies. It creates its
+# own Start Menu shortcut and manages its own run-at-login entry from inside the app,
+# so there is nothing for a traditional installer to do -- winget's portable handling
+# covers install, PATH registration and uninstall on its own.
+InstallerType: portable
+
+# Exposes `offender` on PATH. `offender --make-shortcut` writes the Start Menu entry.
+Commands:
+  - offender
+
+ReleaseDate: 2026-09-21
+InstallerLocale: en-US
+MinimumOSVersion: 10.0.19041.0
+
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/zakijariwala/offender/releases/download/v0.1.1/Offender.exe
+    InstallerSha256: 6A9146AFE31C42DABDA2D13FD163C19BED14CA3FDE0EF06F559F4185C39B0456
+
+ManifestType: installer
+ManifestVersion: 1.6.0

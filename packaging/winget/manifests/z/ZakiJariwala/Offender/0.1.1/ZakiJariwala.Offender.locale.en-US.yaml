@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+
+PackageIdentifier: ZakiJariwala.Offender
+PackageVersion: 0.1.1
+PackageLocale: en-US
+
+Publisher: Zaki Jariwala
+PublisherUrl: https://github.com/zakijariwala
+PublisherSupportUrl: https://github.com/zakijariwala/offender/issues
+
+PackageName: Offender
+PackageUrl: https://github.com/zakijariwala/offender
+Moniker: offender
+
+License: MIT
+LicenseUrl: https://github.com/zakijariwala/offender/blob/main/LICENSE
+Copyright: Copyright (c) 2026 Zaki Jariwala
+CopyrightUrl: https://github.com/zakijariwala/offender/blob/main/LICENSE
+
+ShortDescription: A desktop monitor that tells you what is slowing your machine down.
+Description: |-
+  Offender is an ambient Windows desktop monitor. It idles as a small notch in the corner
+  of the screen showing CPU, memory and network at a glance, and expands to a full panel
+  on hover with disk, GPU and a ranked list of the processes actually costing you
+  resources.
+
+  Processes are aggregated by image name, so a browser's helper processes appear as one
+  row, and scored on a weighted composite of CPU time, memory footprint and disk I/O.
+
+  It is a single self-contained executable compiled with NativeAOT, roughly 2 MB, with no
+  .NET runtime dependency. It uses about 7 MB of memory and 0.04% CPU. Nothing it reads
+  requires administrator rights, and it makes no network connections.
+
+Tags:
+  - cpu
+  - gpu
+  - hardware-monitor
+  - memory
+  - monitor
+  - network
+  - performance
+  - process
+  - ram
+  - system-monitor
+  - taskbar
+  - widget
+
+ReleaseNotesUrl: https://github.com/zakijariwala/offender/releases/tag/v0.1.1
+Documentations:
+  - DocumentLabel: Architecture
+    DocumentUrl: https://github.com/zakijariwala/offender/blob/main/docs/ARCHITECTURE.md
+  - DocumentLabel: Known issues
+    DocumentUrl: https://github.com/zakijariwala/offender/blob/main/docs/KNOWN_ISSUES.md
+
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
