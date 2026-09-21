@@ -10,6 +10,11 @@ PackageVersion: 0.1.1
 InstallerType: portable
 
 # Exposes `offender` on PATH. `offender --make-shortcut` writes the Start Menu entry.
+#
+# Note that winget creates the PATH alias as a symlink, which needs Developer Mode or an
+# elevated install. Without either, the package still installs and runs correctly but the
+# bare `offender` command is not registered -- verified on a machine with Developer Mode
+# off. This is winget behaviour rather than anything the manifest can control.
 Commands:
   - offender
 
