@@ -15,11 +15,22 @@
 [CmdletBinding()]
 param(
     [switch]$Release,
-    [switch]$Run
+    [switch]$Run,
+
+    # Overrides the version baked into the executable's version resource. CI passes the
+    # git tag here so the shipped binary always reports the version it was released as.
+    [string]$Version
 )
 
 $ErrorActionPreference = 'Stop'
 $project = Join-Path $PSScriptRoot 'src\Offender\Offender.csproj'
+
+# Passed through to MSBuild when supplied; otherwise the csproj default is used.
+$versionArgs = @()
+if ($Version) {
+    $versionArgs = @("-p:Version=$Version")
+    Write-Host "Version: $Version" -ForegroundColor DarkGray
+}
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
     throw "dotnet not found. Install the .NET SDK: winget install --id Microsoft.DotNet.SDK.10 -e"
@@ -53,14 +64,14 @@ Install the C++ build tools:
 '@
     }
 
-    dotnet publish $project -c Release -r win-x64 -p:PublishAot=true -p:SelfContained=true
+    dotnet publish $project -c Release -r win-x64 -p:PublishAot=true -p:SelfContained=true @versionArgs
     if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 
     $exe = Join-Path $PSScriptRoot 'src\Offender\bin\Release\net8.0-windows\win-x64\publish\Offender.exe'
 } else {
     Write-Host 'Building (framework-dependent)...' -ForegroundColor Cyan
 
-    dotnet build $project -c Debug
+    dotnet build $project -c Debug @versionArgs
     if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
     $exe = Join-Path $PSScriptRoot 'src\Offender\bin\Debug\net8.0-windows\win-x64\Offender.exe'

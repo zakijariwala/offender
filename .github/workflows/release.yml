@@ -30,8 +30,25 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Derive version from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $tag = if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            '${{ github.event.inputs.tag }}'
+          } else {
+            '${{ github.ref_name }}'
+          }
+          # v0.1.1 -> 0.1.1
+          $version = $tag -replace '^v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') {
+            throw "Tag '$tag' does not yield a valid version ('$version'). Use vMAJOR.MINOR.PATCH."
+          }
+          "version=$version" | Out-File $env:GITHUB_OUTPUT -Append
+          Write-Host "Building version $version from tag $tag"
+
       - name: Publish NativeAOT
-        run: .\build.ps1 -Release
+        run: .\build.ps1 -Release -Version ${{ steps.ver.outputs.version }}
 
       - name: Stage artifacts and checksums
         shell: pwsh
@@ -44,6 +61,15 @@ jobs:
           if ($txt -match 'coreclr\.dll' -or $txt -match 'mscoree\.dll') {
             throw 'Executable references the CLR - this is not a NativeAOT build.'
           }
+
+          # winget and Add/Remove Programs read the version resource, so a mismatch
+          # between the tag and the binary breaks upgrade detection downstream.
+          $expected = '${{ steps.ver.outputs.version }}'
+          $actual = (Get-Item $exe).VersionInfo.FileVersion
+          if (-not $actual.StartsWith($expected)) {
+            throw "Version resource is '$actual' but the tag says '$expected'."
+          }
+          Write-Host "Version resource OK: $actual"
 
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item $exe dist/Offender.exe

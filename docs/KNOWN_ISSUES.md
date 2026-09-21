@@ -1,6 +1,6 @@
 # Known issues
 
-Current as of v0.1.0.
+Current as of v0.1.1.
 
 Three categories, because they deserve different levels of trust:
 
@@ -34,7 +34,22 @@ is a guess at the cause, not a validated fix.
 
 *Reproducing this deliberately is the single most valuable open task.*
 
-### 2. The selected network interface is never shown · Low
+### 2. v0.1.0 shipped with a wrong version resource · Fixed in 0.1.1
+
+The published v0.1.0 binary reports `FileVersion 1.0.0.0`, a `ProductVersion` carrying the
+hash of the *initial* commit, a blank copyright, and `CompanyName` defaulted to the
+assembly name. No `<Version>` was set in the project file.
+
+This matters beyond cosmetics: MSI, winget and MSIX all key upgrade detection off the file
+version, so every release would have reported 1.0.0.0 and upgrades would have silently
+no-opped.
+
+Fixed in 0.1.1. Release builds now take their version from the git tag, and the release
+workflow fails if the binary's version resource does not match the tag it was built from.
+**v0.1.0 itself is unchanged** — released artifacts are immutable — so anything reading the
+version of a v0.1.0 download still sees 1.0.0.0.
+
+### 3. The selected network interface is never shown · Low
 
 `NetSampler` picks the busiest adapter (or the one matched by `pin_interface`) and records
 its description in `Snapshot.NetInterface` — which **nothing ever reads**. On a machine
@@ -43,7 +58,7 @@ the NET rows describe.
 
 Either surface it in the panel or on the tray tooltip, or drop the field.
 
-### 3. `SettingsWindow` object is retained after its window closes · Low
+### 4. `SettingsWindow` object is retained after its window closes · Low
 
 `PanelWindow._settings` is never set to `null` when the settings window is destroyed, so
 the managed object survives until settings is reopened or the app exits.
@@ -51,7 +66,7 @@ the managed object survives until settings is reopened or the app exits.
 The expensive part is already handled — the `GdiCanvas`, including its multi-megabyte DIB,
 is disposed on `WM_DESTROY` — so this is a small managed object, not a GDI leak.
 
-### 4. Notch throughput slot can clip · Low
+### 5. Notch throughput slot can clip · Low
 
 `AppendCompactRate` emits up to five characters for sub-kilobyte rates (`1011B`), plus a
 direction arrow, into a slot sized at 40 logical px. The worst case is marginal and can
@@ -59,7 +74,7 @@ clip the last glyph.
 
 Either widen the slot or switch sub-kilobyte rates to three significant characters.
 
-### 5. Corner radius is aliased on the opaque themes · Low
+### 6. Corner radius is aliased on the opaque themes · Low
 
 DWM exposes three corner *states*, not a radius, so a custom radius is applied by clipping
 the window with a region — and regions are 1-bit masks with no antialiasing. At larger
@@ -70,7 +85,7 @@ Clear is unaffected: it composites its own alpha and gets an exact antialiased r
 Fixing this properly means moving the opaque themes to per-pixel alpha with a
 geometrically-derived mask, which would also need re-testing the Glass theme's acrylic.
 
-### 6. Tray tooltip line breaks · Low
+### 7. Tray tooltip line breaks · Low
 
 `TrayIcon.WriteTip` separates lines with `\n`. Multi-line tray tooltips generally expect
 `\r\n`, and reliable multi-line behaviour needs `NOTIFYICON_VERSION_4`. How it actually
@@ -84,13 +99,13 @@ None of these are known to be broken. They are code paths that have never run.
 
 | # | Area | Why it is unverified |
 |---|---|---|
-| 7 | **Acrylic blur (Glass theme)** | `SetWindowCompositionAttribute` is an undocumented private API and may be failing silently — the theme would look like a plain solid panel and nobody would notice. `PrintWindow` captures cannot show blur, so the screenshots do not prove it works. |
-| 8 | **Three-column settings layout** | The column count adapts to the work area; a 1128 px display fits everything in two. The three-column branch has never rendered. |
-| 9 | **Multi-monitor / mixed DPI** | `WM_DPICHANGED` handling and per-monitor anchoring are implemented but were developed on a single display. |
-| 10 | **Explorer restart recovery** | The `TaskbarCreated` handler rebuilds the tray icon and taskbar readout. Explorer was never actually restarted during testing. |
-| 11 | **Start with Windows across a reboot** | The `HKCU\…\Run` entry is written and read back correctly, but the machine was never rebooted to confirm it launches and restores position. |
-| 12 | **Tray icon appearance** | Confirmed to be created and updating every tick; never visually inspected against a real taskbar, light or dark. |
-| 13 | **One-off: notch started expanded** | During one test run the panel came up expanded despite `collapsed=1`. Never reproduced across a dozen subsequent runs. Recorded in case it resurfaces. |
+| 8 | **Acrylic blur (Glass theme)** | `SetWindowCompositionAttribute` is an undocumented private API and may be failing silently — the theme would look like a plain solid panel and nobody would notice. `PrintWindow` captures cannot show blur, so the screenshots do not prove it works. |
+| 9 | **Three-column settings layout** | The column count adapts to the work area; a 1128 px display fits everything in two. The three-column branch has never rendered. |
+| 10 | **Multi-monitor / mixed DPI** | `WM_DPICHANGED` handling and per-monitor anchoring are implemented but were developed on a single display. |
+| 11 | **Explorer restart recovery** | The `TaskbarCreated` handler rebuilds the tray icon and taskbar readout. Explorer was never actually restarted during testing. |
+| 12 | **Start with Windows across a reboot** | The `HKCU\…\Run` entry is written and read back correctly, but the machine was never rebooted to confirm it launches and restores position. |
+| 13 | **Tray icon appearance** | Confirmed to be created and updating every tick; never visually inspected against a real taskbar, light or dark. |
+| 14 | **One-off: notch started expanded** | During one test run the panel came up expanded despite `collapsed=1`. Never reproduced across a dozen subsequent runs. Recorded in case it resurfaces. |
 
 ---
 

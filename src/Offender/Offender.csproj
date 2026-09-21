@@ -14,6 +14,24 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
+  <!-- Version resource.
+       MSI, winget and MSIX all key upgrade detection off the file version, so this has
+       to be real: a binary that reports 1.0.0.0 for every release makes upgrades
+       silently no-op. Release builds override Version from the git tag
+       (see .github/workflows/release.yml) so the two cannot drift apart. -->
+  <PropertyGroup>
+    <Version>0.1.1</Version>
+    <Product>Offender</Product>
+    <AssemblyTitle>Offender</AssemblyTitle>
+    <Description>An ambient Windows desktop monitor that ranks the processes slowing the machine down.</Description>
+    <Authors>Zaki Jariwala</Authors>
+    <Company>Zaki Jariwala</Company>
+    <Copyright>Copyright (c) 2026 Zaki Jariwala</Copyright>
+    <!-- Keep ProductVersion a clean semver for Add/Remove Programs and winget; the
+         commit is recorded in the release notes instead. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
   <!-- Footprint knobs. PublishAot is off for dev builds (runs on the installed
        .NET 8 runtime); build.ps1 turns it on for the shipping binary. -->
   <PropertyGroup>
